@@ -1,5 +1,7 @@
 # NEET Mock Test AI
 
+[![CI](https://github.com/rnimriya/NIIT/actions/workflows/ci.yml/badge.svg)](https://github.com/rnimriya/NIIT/actions/workflows/ci.yml)
+
 Production-grade, AI-native NEET preparation platform. Autonomous learning OS that plans, tutors, tests, revises, and predicts — built on Claude.
 
 > **Status:** Foundation + working slices. This repo contains the full **architecture blueprint** ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), the monorepo **scaffold**, and runnable, DB-backed slices:
