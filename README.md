@@ -2,7 +2,31 @@
 
 Production-grade, AI-native NEET preparation platform. Autonomous learning OS that plans, tutors, tests, revises, and predicts — built on Claude.
 
-> **Status:** Foundation. This repo currently contains the full **architecture blueprint** ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)) and the monorepo **scaffold**. Service implementation (Phase 14) is in progress.
+> **Status:** Foundation + first runnable slice. This repo contains the full **architecture blueprint** ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), the monorepo **scaffold**, and a working **vertical slice**: the AI tutor gateway (Claude streaming + fallback + prompt caching) and a Next.js dashboard/chat, bootable via docker-compose.
+
+## Run the vertical slice
+
+Boots with **zero API keys** (the tutor runs in deterministic mock mode). Set `ANTHROPIC_API_KEY` for real Claude responses.
+
+```bash
+cp .env.example .env            # optional: add ANTHROPIC_API_KEY
+pnpm install
+docker compose -f infra/docker/docker-compose.yml up --build
+#   web → http://localhost:3000        (dashboard + AI tutor chat)
+#   ai  → http://localhost:4001/readyz (gateway health)
+```
+
+Or run the AI gateway alone without Docker:
+
+```bash
+pnpm --filter @neet/types build
+pnpm --filter @neet/ai build && node services/ai/dist/main.js
+curl -N -X POST localhost:4001/api/v1/ai/chat \
+  -H 'content-type: application/json' \
+  -d '{"question":"Explain the photoelectric effect"}'
+```
+
+The gateway selects **Claude Opus 4.8** for hard doubts and **Sonnet 4.6** by default, caches the syllabus prompt prefix (1h TTL), and falls back Claude → OpenAI → mock.
 
 ## Stack
 
