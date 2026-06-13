@@ -15,6 +15,13 @@
       "when": 1781333609700,
       "tag": "0001_tough_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781334133497,
+      "tag": "0002_kind_sister_grimm",
+      "breakpoints": true
     }
   ]
 }

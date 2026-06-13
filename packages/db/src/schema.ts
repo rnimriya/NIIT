@@ -132,9 +132,24 @@ export const mastery = pgTable(
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.conceptId] }) }),
 );
 
+// ---- Prediction ----
+export const predictions = pgTable("predictions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  predictedScore: integer("predicted_score").notNull(),
+  rankBand: text("rank_band").notNull(),
+  confidence: real("confidence").notNull(),
+  weightedMastery: real("weighted_mastery").notNull(),
+  coverage: real("coverage").notNull(),
+  levers: jsonb("levers").notNull(), // [{conceptId,name,currentMastery,potentialGain}]
+  modelVersion: text("model_version").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Concept = typeof concepts.$inferSelect;
+export type Prediction = typeof predictions.$inferSelect;

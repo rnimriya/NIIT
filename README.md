@@ -6,7 +6,8 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **AI tutor gateway** — Claude streaming + fallback chain + prompt caching, persists conversations
 > - **Auth** — register/login/JWT (Clerk-ready), runs DB migrations
 > - **Tests + Mastery** — seeded NEET bank → diagnostic → NEET scoring (+4/−1) → persisted per-concept mastery (EWMA)
-> - **Web** — Next.js dashboard, tutor chat, and diagnostic test UI
+> - **Prediction** — turns mastery into a predicted NEET score (/720), rank band, confidence, and the biggest score "levers"
+> - **Web** — Next.js dashboard (live prediction), tutor chat, and diagnostic test UI
 
 ## Run the slices
 
@@ -17,9 +18,10 @@ cp .env.example .env            # optional: add ANTHROPIC_API_KEY
 pnpm install
 docker compose -f infra/docker/docker-compose.yml up --build
 #   web   → http://localhost:3000        (dashboard · tutor · diagnostic)
-#   ai    → http://localhost:4001/readyz
-#   auth  → http://localhost:4002/readyz
-#   tests → http://localhost:4003/readyz  (auto-seeds the question bank)
+#   ai         → http://localhost:4001/readyz
+#   auth       → http://localhost:4002/readyz
+#   tests      → http://localhost:4003/readyz  (auto-seeds the question bank)
+#   prediction → http://localhost:4004/readyz
 ```
 
 **The learning loop, via API:**
@@ -30,6 +32,8 @@ TOKEN=$(curl -s -X POST localhost:4002/api/v1/auth/register \
 # take a diagnostic → score it → mastery is saved and weak concepts surfaced
 curl -s -X POST localhost:4003/api/v1/test/diagnostic -H "authorization: Bearer $TOKEN"
 curl -s localhost:4003/api/v1/mastery -H "authorization: Bearer $TOKEN"
+# predicted NEET score (/720), rank band, confidence, and improvement levers
+curl -s localhost:4004/api/v1/prediction -H "authorization: Bearer $TOKEN"
 ```
 
 Or run the AI gateway alone without Docker:

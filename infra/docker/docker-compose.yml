@@ -80,6 +80,18 @@ services:
     depends_on:
       auth: { condition: service_healthy } # migrations applied; then seeds bank
 
+  prediction:
+    build:
+      context: ../..
+      dockerfile: services/prediction/Dockerfile
+    environment:
+      PREDICTION_PORT: 4004
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+    ports: ["4004:4004"]
+    depends_on:
+      auth: { condition: service_healthy }
+
   web:
     build:
       context: ../..
@@ -88,8 +100,9 @@ services:
         NEXT_PUBLIC_AI_URL: http://localhost:4001
         NEXT_PUBLIC_AUTH_URL: http://localhost:4002
         NEXT_PUBLIC_TESTS_URL: http://localhost:4003
+        NEXT_PUBLIC_PREDICTION_URL: http://localhost:4004
     ports: ["3000:3000"]
-    depends_on: ["ai", "auth", "tests"]
+    depends_on: ["ai", "auth", "tests", "prediction"]
 
 volumes:
   pgdata:

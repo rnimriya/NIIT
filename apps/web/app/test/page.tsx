@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const TESTS_URL = process.env.NEXT_PUBLIC_TESTS_URL ?? "http://localhost:4003";
+const PREDICTION_URL =
+  process.env.NEXT_PUBLIC_PREDICTION_URL ?? "http://localhost:4004";
 
 type Option = { key: string; text: string };
 type Question = { id: string; subject: string; stem: string; options: Option[] };
@@ -61,6 +63,14 @@ export default function DiagnosticPage() {
     setResult(await res.json());
     setQuestions([]);
     setBusy(false);
+
+    // refresh the dashboard prediction from the new mastery (fire-and-forget)
+    if (token) {
+      fetch(`${PREDICTION_URL}/api/v1/prediction/recompute`, {
+        method: "POST",
+        headers: authHeaders(),
+      }).catch(() => {});
+    }
   }
 
   return (

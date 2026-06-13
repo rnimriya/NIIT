@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PredictionCard from "./PredictionCard";
 
 export default function Dashboard() {
   return (
@@ -9,11 +10,7 @@ export default function Dashboard() {
       </p>
 
       <div className="grid">
-        <div className="card">
-          <h3>Predicted Score</h3>
-          <div className="big">612</div>
-          <div className="meta">Rank band 1500–3000 · 82% confidence</div>
-        </div>
+        <PredictionCard />
         <div className="card">
           <h3>Today&apos;s Focus</h3>
           <div className="big">3 concepts</div>
