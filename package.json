@@ -1,0 +1,19 @@
+{
+  "name": "neet-ai",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "up": "docker compose -f infra/docker/docker-compose.yml up --build",
+    "down": "docker compose -f infra/docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.4"
+  }
+}

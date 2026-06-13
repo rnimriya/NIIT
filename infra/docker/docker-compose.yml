@@ -1,0 +1,58 @@
+# Local vertical slice: Postgres + Redis + AI gateway + Web.
+# Boots with zero API keys (AI tutor runs in mock mode); set ANTHROPIC_API_KEY
+# in a root .env for real Claude responses.
+#
+#   docker compose -f infra/docker/docker-compose.yml up --build
+#   → web  http://localhost:3000
+#   → ai   http://localhost:4001/readyz
+
+name: neet-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: neet
+      POSTGRES_PASSWORD: neet
+      POSTGRES_DB: neet
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neet"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ai:
+    build:
+      context: ../..
+      dockerfile: services/ai/Dockerfile
+    environment:
+      AI_PORT: 4001
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports: ["4001:4001"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_AI_URL: http://localhost:4001
+    ports: ["3000:3000"]
+    depends_on: ["ai"]
+
+volumes:
+  pgdata:

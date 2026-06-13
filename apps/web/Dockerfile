@@ -1,0 +1,19 @@
+# Next.js web app (pnpm monorepo)
+FROM node:20-slim AS base
+RUN corepack enable
+WORKDIR /repo
+
+FROM base AS build
+ARG NEXT_PUBLIC_AI_URL=http://localhost:4001
+ENV NEXT_PUBLIC_AI_URL=$NEXT_PUBLIC_AI_URL
+COPY pnpm-workspace.yaml package.json ./
+COPY apps/web ./apps/web
+RUN pnpm install --frozen-lockfile=false
+RUN pnpm --filter @neet/web build
+
+FROM base AS runtime
+ENV NODE_ENV=production
+COPY --from=build /repo /repo
+WORKDIR /repo/apps/web
+EXPOSE 3000
+CMD ["pnpm", "start"]
