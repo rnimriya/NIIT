@@ -8,6 +8,7 @@ const Schema = z.object({
   // Optional email provider — without it, email channel just logs.
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("NEET AI <noreply@neet.ai>"),
+  KAFKA_BROKERS: z.string().optional(),
 });
 
 export const config = Schema.parse(process.env);

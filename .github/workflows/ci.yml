@@ -50,5 +50,19 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Integration smoke test
+      - name: Integration smoke test (HTTP path)
         run: bash scripts/smoke.sh
+
+      - name: Start Kafka (Redpanda)
+        run: |
+          docker run -d --name redpanda -p 9092:9092 redpandadata/redpanda:latest \
+            redpanda start --smp 1 --memory 700M --reserve-memory 0M --overprovisioned \
+            --node-id 0 --check=false \
+            --kafka-addr PLAINTEXT://0.0.0.0:9092 \
+            --advertise-kafka-addr PLAINTEXT://localhost:9092
+          for i in $(seq 1 60); do docker exec redpanda rpk cluster info >/dev/null 2>&1 && break; sleep 1; done
+
+      - name: Event-driven smoke test (Kafka path)
+        run: bash scripts/smoke-events.sh
+        env:
+          KAFKA_BROKERS: localhost:9092

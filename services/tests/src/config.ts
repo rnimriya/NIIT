@@ -6,6 +6,7 @@ const Schema = z.object({
   DATABASE_URL: z.string().default("postgres://neet:neet@localhost:5432/neet"),
   JWT_DEV_SECRET: z.string().default("dev-only-change-me"),
   NOTIFICATIONS_URL: z.string().default("http://localhost:4007"),
+  KAFKA_BROKERS: z.string().optional(),
 });
 
 export const config = Schema.parse(process.env);

@@ -10,6 +10,7 @@ import {
   type Database,
 } from "@neet/db";
 import { emitNotification } from "@neet/shared";
+import { EventBus, kafkaBrokers, ASSESSMENT_TOPIC } from "@neet/events";
 import { DB } from "./db.module";
 import { config } from "./config";
 
@@ -42,6 +43,12 @@ export interface ScoreResult {
 
 @Injectable()
 export class TestsService {
+  // When Kafka is enabled, scoring publishes a TestScored event that prediction
+  // and notifications consume. Otherwise we fall back to a direct HTTP notify.
+  private readonly bus = kafkaBrokers()
+    ? new EventBus(kafkaBrokers() as string[], "tests")
+    : null;
+
   constructor(@Inject(DB) private readonly db: Database) {}
 
   /** Builds a balanced diagnostic (PER_SUBJECT questions per subject). */
@@ -156,13 +163,27 @@ export class TestsService {
       });
       persisted = true;
 
-      void emitNotification(config.NOTIFICATIONS_URL, {
-        userId,
-        type: "test_scored",
-        title: `Diagnostic scored: ${score}/${maxScore}`,
-        body: `You got ${correct} right, ${wrong} wrong. Generate a study plan to target your weak areas.`,
-        dedupeWindowSec: 5, // allow per-attempt notifications
-      });
+      if (this.bus) {
+        // Event-driven: prediction recomputes + notifications notify on consume.
+        void this.bus.publish(
+          ASSESSMENT_TOPIC,
+          userId,
+          this.bus.makeEvent(
+            "TestScored",
+            { testId, score, maxScore, correct, wrong },
+            userId,
+          ),
+        );
+      } else {
+        // HTTP fallback (no event bus): notify directly.
+        void emitNotification(config.NOTIFICATIONS_URL, {
+          userId,
+          type: "test_scored",
+          title: `Diagnostic scored: ${score}/${maxScore}`,
+          body: `You got ${correct} right, ${wrong} wrong. Generate a study plan to target your weak areas.`,
+          dedupeWindowSec: 5,
+        });
+      }
     }
 
     const weakConcepts = await this.weakFrom(perConcept);

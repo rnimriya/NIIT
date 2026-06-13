@@ -35,6 +35,26 @@ services:
       timeout: 3s
       retries: 10
 
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=700M
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092
+    ports: ["9092:9092"]
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "info"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   auth:
     build:
       context: ../..
@@ -78,9 +98,11 @@ services:
       DATABASE_URL: *db-url
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
       NOTIFICATIONS_URL: http://notifications:4007
+      KAFKA_BROKERS: redpanda:9092
     ports: ["4003:4003"]
     depends_on:
       auth: { condition: service_healthy } # migrations applied; then seeds bank
+      redpanda: { condition: service_healthy }
 
   prediction:
     build:
@@ -90,9 +112,11 @@ services:
       PREDICTION_PORT: 4004
       DATABASE_URL: *db-url
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+      KAFKA_BROKERS: redpanda:9092
     ports: ["4004:4004"]
     depends_on:
       auth: { condition: service_healthy }
+      redpanda: { condition: service_healthy }
 
   study:
     build:
@@ -136,9 +160,11 @@ services:
       DATABASE_URL: *db-url
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
+      KAFKA_BROKERS: redpanda:9092
     ports: ["4007:4007"]
     depends_on:
       auth: { condition: service_healthy }
+      redpanda: { condition: service_healthy }
 
   web:
     build:
