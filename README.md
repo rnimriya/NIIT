@@ -15,6 +15,7 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Event bus (Kafka)** — optional, gated by `KAFKA_BROKERS`. When on, `tests` writes `TestScored` to a **transactional outbox** (atomic with the DB write) and a relay publishes it; `prediction` + `notifications` consume it (event-driven recompute + notify). When off, services fall back to direct HTTP. compose runs Redpanda
 > - **Analytics (ClickHouse)** — consumes the Kafka event stream into ClickHouse + a `track` API; exposes overview + acquisition→activation funnel
 > - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, notifications, and analytics-funnel UI
+> - **Infra-as-code** — Terraform (VPC · EKS · RDS · ElastiCache · MSK · ECR) and a reusable Helm chart with per-service values; both `validate`/`lint`-checked in CI
 
 ## Run the slices
 

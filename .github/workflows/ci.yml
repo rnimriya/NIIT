@@ -80,3 +80,29 @@ jobs:
           KAFKA_BROKERS: localhost:9092
           CLICKHOUSE_URL: http://localhost:8123
           CLICKHOUSE_PASSWORD: neet
+
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+
+      - name: Terraform fmt
+        run: terraform -chdir=infra/terraform fmt -check -recursive
+
+      - name: Terraform validate
+        run: |
+          terraform -chdir=infra/terraform init -backend=false -input=false
+          terraform -chdir=infra/terraform validate
+
+      - uses: azure/setup-helm@v4
+
+      - name: Helm lint + template
+        run: |
+          helm lint infra/k8s/helm/neet-service
+          for v in infra/k8s/helm/values/*.yaml; do
+            helm template "$(basename "$v" .yaml)" infra/k8s/helm/neet-service -f "$v" >/dev/null
+          done

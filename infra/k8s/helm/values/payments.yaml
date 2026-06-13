@@ -1,0 +1,5 @@
+name: payments
+port: 4006
+image: { repository: ghcr.io/rnimriya/neet-ai/payments, tag: latest, pullPolicy: IfNotPresent }
+env:
+  NOTIFICATIONS_URL: http://notifications:4007

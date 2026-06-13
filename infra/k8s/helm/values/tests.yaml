@@ -1,0 +1,6 @@
+name: tests
+port: 4003
+image: { repository: ghcr.io/rnimriya/neet-ai/tests, tag: latest, pullPolicy: IfNotPresent }
+env:
+  NOTIFICATIONS_URL: http://notifications:4007
+  KAFKA_BROKERS: redpanda:9092

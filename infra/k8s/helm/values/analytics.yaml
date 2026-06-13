@@ -1,0 +1,6 @@
+name: analytics
+port: 4008
+image: { repository: ghcr.io/rnimriya/neet-ai/analytics, tag: latest, pullPolicy: IfNotPresent }
+env:
+  KAFKA_BROKERS: redpanda:9092
+  CLICKHOUSE_URL: http://clickhouse:8123

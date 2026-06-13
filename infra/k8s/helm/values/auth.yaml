@@ -1,0 +1,3 @@
+name: auth
+port: 4002
+image: { repository: ghcr.io/rnimriya/neet-ai/auth, tag: latest, pullPolicy: IfNotPresent }

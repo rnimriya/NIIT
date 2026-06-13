@@ -7,3 +7,9 @@ dist/
 *.log
 .DS_Store
 *.tsbuildinfo
+
+# terraform
+infra/terraform/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log

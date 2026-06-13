@@ -1,0 +1,36 @@
+# Defaults for the reusable service chart. Override per service in ../values/<svc>.yaml
+name: service
+replicaCount: 2
+
+image:
+  repository: ghcr.io/rnimriya/neet-ai/service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+port: 8080
+
+# Non-secret config injected as env vars (e.g. in-cluster service URLs).
+env: {}
+
+# Secret/ConfigMap sources mounted as env (DATABASE_URL, JWT_DEV_SECRET, ...).
+envFrom:
+  - type: secret
+    name: neet-secrets
+
+probes:
+  readiness: /readyz
+  liveness: /healthz
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
