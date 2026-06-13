@@ -16,6 +16,7 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Analytics (ClickHouse)** — consumes the Kafka event stream into ClickHouse + a `track` API; exposes overview + acquisition→activation funnel
 > - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, notifications, and analytics-funnel UI
 > - **Infra-as-code** — Terraform (VPC · EKS · RDS · ElastiCache · MSK · ECR) and a reusable Helm chart with per-service values; both `validate`/`lint`-checked in CI
+> - **CI/CD** — every push: build + typecheck + HTTP/Kafka/ClickHouse smoke + IaC validate. On a `v*` tag: build & publish all 9 images to GHCR (`ghcr.io/<owner>/neet-ai/<service>`)
 
 ## Run the slices
 
