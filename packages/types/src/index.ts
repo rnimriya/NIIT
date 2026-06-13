@@ -40,6 +40,45 @@ export type ChatStreamEvent =
   | { type: "done"; meta: ChatMeta }
   | { type: "error"; message: string };
 
+// ---- AI Planner ----
+export const Lever = z.object({
+  conceptId: z.string(),
+  name: z.string(),
+  currentMastery: z.number(),
+  potentialGain: z.number(),
+});
+export type Lever = z.infer<typeof Lever>;
+
+export const PlanInput = z.object({
+  horizonDays: z.number().int().min(1).max(90).default(7),
+  predictedScore: z.number().int(),
+  rankBand: z.string(),
+  levers: z.array(Lever),
+});
+export type PlanInput = z.infer<typeof PlanInput>;
+
+export const PlanTask = z.object({
+  type: z.enum(["study", "practice", "revise"]),
+  concept: z.string(),
+  minutes: z.number().int(),
+});
+export const PlanDay = z.object({
+  day: z.number().int(),
+  focus: z.string(),
+  tasks: z.array(PlanTask),
+});
+export const StudyPlan = z.object({
+  summary: z.string(),
+  days: z.array(PlanDay),
+});
+export type StudyPlan = z.infer<typeof StudyPlan>;
+
+export interface PlanResult {
+  plan: StudyPlan;
+  model: string;
+  provider: "anthropic" | "openai" | "deterministic";
+}
+
 // ---- Domain events (Kafka envelope) ----
 export const EventEnvelope = z.object({
   eventId: z.string().uuid(),

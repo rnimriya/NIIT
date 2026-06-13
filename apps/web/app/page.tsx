@@ -33,6 +33,9 @@ export default function Dashboard() {
       </Link>{" "}
       <Link href="/test" className="btn">
         Take a Diagnostic →
+      </Link>{" "}
+      <Link href="/plan" className="btn">
+        My Study Plan →
       </Link>
 
       <p className="meta" style={{ marginTop: 28 }}>

@@ -132,6 +132,17 @@ export const mastery = pgTable(
   (t) => ({ pk: primaryKey({ columns: [t.userId, t.conceptId] }) }),
 );
 
+// ---- Study & Planning ----
+export const studyPlans = pgTable("study_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  horizonDays: integer("horizon_days").notNull().default(7),
+  plan: jsonb("plan").notNull(), // { summary, days:[...] }
+  source: text("source").notNull().default("deterministic"), // anthropic|openai|deterministic
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---- Prediction ----
 export const predictions = pgTable("predictions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -153,3 +164,4 @@ export type Message = typeof messages.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Concept = typeof concepts.$inferSelect;
 export type Prediction = typeof predictions.$inferSelect;
+export type StudyPlanRow = typeof studyPlans.$inferSelect;

@@ -2,9 +2,26 @@ import { Injectable, Logger } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { createDb, conversations, messages, type Database } from "@neet/db";
-import type { ChatRequest, ChatStreamEvent, ChatMeta } from "@neet/types";
+import {
+  StudyPlan,
+  type ChatRequest,
+  type ChatStreamEvent,
+  type ChatMeta,
+  type PlanInput,
+  type PlanResult,
+} from "@neet/types";
 import { hasAnthropic, hasOpenAI, persistEnabled, databaseUrl } from "./config";
 import { SYLLABUS_SYSTEM_PREFIX, buildUserContent } from "./prompts";
+import { PLANNER_SYSTEM, planUserPrompt, buildPlanDeterministic } from "./planner";
+
+/** Pulls the first JSON object out of a model response (handles ```json fences). */
+function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const body = fenced ? fenced[1] : text;
+  const start = body.indexOf("{");
+  const end = body.lastIndexOf("}");
+  return start >= 0 && end > start ? body.slice(start, end + 1) : body;
+}
 
 const CLAUDE_HARD = "claude-opus-4-8";
 const CLAUDE_DEFAULT = "claude-sonnet-4-6";
@@ -39,6 +56,51 @@ export class AiService {
         this.log.warn(`persist failed: ${(e as Error).message}`),
       );
     }
+  }
+
+  /**
+   * AI Planner — turns prediction levers into a day-by-day plan.
+   * Claude (structured JSON) → OpenAI → deterministic builder.
+   */
+  async generatePlan(input: PlanInput): Promise<PlanResult> {
+    if (this.anthropic) {
+      try {
+        const msg = await this.anthropic.messages.create({
+          model: CLAUDE_HARD,
+          max_tokens: 2000,
+          system: PLANNER_SYSTEM,
+          messages: [{ role: "user", content: planUserPrompt(input) }],
+        } as any);
+        const text =
+          (msg.content.find((b: any) => b.type === "text") as any)?.text ?? "";
+        const plan = StudyPlan.parse(JSON.parse(extractJson(text)));
+        return { plan, model: CLAUDE_HARD, provider: "anthropic" };
+      } catch (e) {
+        this.log.warn(`Claude planner failed, falling back: ${(e as Error).message}`);
+      }
+    }
+    if (this.openai) {
+      try {
+        const res = await this.openai.chat.completions.create({
+          model: "gpt-4o",
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: PLANNER_SYSTEM },
+            { role: "user", content: planUserPrompt(input) },
+          ],
+        });
+        const text = res.choices[0]?.message?.content ?? "";
+        const plan = StudyPlan.parse(JSON.parse(extractJson(text)));
+        return { plan, model: "gpt-4o", provider: "openai" };
+      } catch (e) {
+        this.log.warn(`OpenAI planner failed, falling back: ${(e as Error).message}`);
+      }
+    }
+    return {
+      plan: buildPlanDeterministic(input),
+      model: "deterministic-planner",
+      provider: "deterministic",
+    };
   }
 
   /** Fallback chain: Claude → OpenAI → deterministic mock. */

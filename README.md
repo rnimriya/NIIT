@@ -7,7 +7,8 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Auth** — register/login/JWT (Clerk-ready), runs DB migrations
 > - **Tests + Mastery** — seeded NEET bank → diagnostic → NEET scoring (+4/−1) → persisted per-concept mastery (EWMA)
 > - **Prediction** — turns mastery into a predicted NEET score (/720), rank band, confidence, and the biggest score "levers"
-> - **Web** — Next.js dashboard (live prediction), tutor chat, and diagnostic test UI
+> - **AI Planner** (`study`) — composes prediction → Claude → a persisted day-by-day study plan targeting the highest-leverage gaps (deterministic fallback)
+> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic test, and study-plan UI
 
 ## Run the slices
 
@@ -22,6 +23,7 @@ docker compose -f infra/docker/docker-compose.yml up --build
 #   auth       → http://localhost:4002/readyz
 #   tests      → http://localhost:4003/readyz  (auto-seeds the question bank)
 #   prediction → http://localhost:4004/readyz
+#   study      → http://localhost:4005/readyz  (AI Planner)
 ```
 
 **The learning loop, via API:**
@@ -34,6 +36,9 @@ curl -s -X POST localhost:4003/api/v1/test/diagnostic -H "authorization: Bearer 
 curl -s localhost:4003/api/v1/mastery -H "authorization: Bearer $TOKEN"
 # predicted NEET score (/720), rank band, confidence, and improvement levers
 curl -s localhost:4004/api/v1/prediction -H "authorization: Bearer $TOKEN"
+# AI study plan: prediction levers → a day-by-day schedule (persisted)
+curl -s -X POST localhost:4005/api/v1/study/plan \
+  -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"horizonDays":7}'
 ```
 
 Or run the AI gateway alone without Docker:

@@ -92,6 +92,20 @@ services:
     depends_on:
       auth: { condition: service_healthy }
 
+  study:
+    build:
+      context: ../..
+      dockerfile: services/study/Dockerfile
+    environment:
+      STUDY_PORT: 4005
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+      AI_URL: http://ai:4001
+      PREDICTION_URL: http://prediction:4004
+    ports: ["4005:4005"]
+    depends_on:
+      auth: { condition: service_healthy }
+
   web:
     build:
       context: ../..
@@ -101,8 +115,9 @@ services:
         NEXT_PUBLIC_AUTH_URL: http://localhost:4002
         NEXT_PUBLIC_TESTS_URL: http://localhost:4003
         NEXT_PUBLIC_PREDICTION_URL: http://localhost:4004
+        NEXT_PUBLIC_STUDY_URL: http://localhost:4005
     ports: ["3000:3000"]
-    depends_on: ["ai", "auth", "tests", "prediction"]
+    depends_on: ["ai", "auth", "tests", "prediction", "study"]
 
 volumes:
   pgdata:
