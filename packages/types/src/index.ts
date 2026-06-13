@@ -40,6 +40,18 @@ export type ChatStreamEvent =
   | { type: "done"; meta: ChatMeta }
   | { type: "error"; message: string };
 
+// ---- Billing / Entitlements ----
+export const PlanTier = z.enum(["free", "plus", "pro"]);
+export type PlanTier = z.infer<typeof PlanTier>;
+
+export const Entitlements = z.object({
+  plan: PlanTier,
+  aiTutorOpus: z.boolean(), // may use the high-reasoning (Opus) tutor
+  planHorizonMax: z.number().int(), // max study-plan length in days
+  mocksPerWeek: z.number().int(),
+});
+export type Entitlements = z.infer<typeof Entitlements>;
+
 // ---- AI Planner ----
 export const Lever = z.object({
   conceptId: z.string(),

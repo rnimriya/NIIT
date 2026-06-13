@@ -38,9 +38,10 @@ export class AiController {
 
     const send = (data: unknown) => res.write(`data: ${JSON.stringify(data)}\n\n`);
     const claims = claimsFromHeader(authHeader, config.JWT_DEV_SECRET);
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
 
     try {
-      for await (const event of this.ai.streamTutor(parsed.data, claims?.sub)) {
+      for await (const event of this.ai.streamTutor(parsed.data, claims?.sub, token)) {
         send(event);
       }
     } catch (err) {

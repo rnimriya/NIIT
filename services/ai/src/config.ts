@@ -6,6 +6,7 @@ const Schema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   JWT_DEV_SECRET: z.string().default("dev-only-change-me"),
+  PAYMENTS_URL: z.string().default("http://localhost:4006"),
 });
 
 export type Config = z.infer<typeof Schema>;

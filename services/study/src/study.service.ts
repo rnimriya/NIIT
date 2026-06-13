@@ -1,9 +1,16 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
 import { studyPlans, type Database } from "@neet/db";
-import type { PlanInput, PlanResult, StudyPlan } from "@neet/types";
+import type { Entitlements, PlanInput, PlanResult, StudyPlan } from "@neet/types";
 import { DB } from "./db.module";
 import { config } from "./config";
+
+const FREE_FALLBACK: Entitlements = {
+  plan: "free",
+  aiTutorOpus: false,
+  planHorizonMax: 3,
+  mocksPerWeek: 2,
+};
 
 @Injectable()
 export class StudyService {
@@ -18,11 +25,15 @@ export class StudyService {
     userId: string,
     token: string,
     horizonDays = 7,
-  ): Promise<{ plan: StudyPlan; source: string }> {
+  ): Promise<{ plan: StudyPlan; source: string; horizonDays: number; plan_tier: string }> {
+    // Entitlement gate: free tier caps the plan horizon.
+    const ent = await this.fetchEntitlements(token);
+    const effectiveHorizon = Math.min(horizonDays, ent.planHorizonMax);
+
     const prediction = await this.fetchPrediction(token);
 
     const input: PlanInput = {
-      horizonDays,
+      horizonDays: effectiveHorizon,
       predictedScore: prediction.predictedScore,
       rankBand: prediction.rankBand,
       levers: prediction.levers,
@@ -32,12 +43,29 @@ export class StudyService {
 
     await this.db.insert(studyPlans).values({
       userId,
-      horizonDays,
+      horizonDays: effectiveHorizon,
       plan: result.plan,
       source: result.provider,
     });
 
-    return { plan: result.plan, source: result.provider };
+    return {
+      plan: result.plan,
+      source: result.provider,
+      horizonDays: effectiveHorizon,
+      plan_tier: ent.plan,
+    };
+  }
+
+  private async fetchEntitlements(token: string): Promise<Entitlements> {
+    try {
+      const res = await fetch(`${config.PAYMENTS_URL}/api/v1/entitlements`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return FREE_FALLBACK;
+      return (await res.json()) as Entitlements;
+    } catch {
+      return FREE_FALLBACK; // fail safe to the least-privileged tier
+    }
   }
 
   async getLatest(userId: string): Promise<{ plan: StudyPlan; source: string } | null> {

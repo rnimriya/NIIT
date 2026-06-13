@@ -10,7 +10,7 @@ import {
   type PlanInput,
   type PlanResult,
 } from "@neet/types";
-import { hasAnthropic, hasOpenAI, persistEnabled, databaseUrl } from "./config";
+import { config, hasAnthropic, hasOpenAI, persistEnabled, databaseUrl } from "./config";
 import { SYLLABUS_SYSTEM_PREFIX, buildUserContent } from "./prompts";
 import { PLANNER_SYSTEM, planUserPrompt, buildPlanDeterministic } from "./planner";
 
@@ -41,11 +41,16 @@ export class AiService {
   async *streamTutor(
     req: ChatRequest,
     userId?: string,
+    token?: string,
   ): AsyncGenerator<ChatStreamEvent> {
     let full = "";
     let meta: ChatMeta | undefined;
 
-    for await (const event of this.run(req)) {
+    // Entitlement gate: only paid tiers get the Opus (hard) tutor. Free users
+    // requesting hard mode are gracefully served by Sonnet instead.
+    const effectiveHard = req.hard ? await this.canUseOpus(token) : false;
+
+    for await (const event of this.run({ ...req, hard: effectiveHard })) {
       if (event.type === "delta") full += event.text;
       if (event.type === "done") meta = event.meta;
       yield event;
@@ -55,6 +60,21 @@ export class AiService {
       this.persist(userId, req.question, full, meta).catch((e) =>
         this.log.warn(`persist failed: ${(e as Error).message}`),
       );
+    }
+  }
+
+  /** Checks the payments service for Opus entitlement (fails safe to false). */
+  private async canUseOpus(token?: string): Promise<boolean> {
+    if (!token) return false;
+    try {
+      const res = await fetch(`${config.PAYMENTS_URL}/api/v1/entitlements`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return false;
+      const ent = (await res.json()) as { aiTutorOpus?: boolean };
+      return !!ent.aiTutorOpus;
+    } catch {
+      return false;
     }
   }
 

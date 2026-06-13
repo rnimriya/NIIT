@@ -64,6 +64,7 @@ services:
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      PAYMENTS_URL: http://payments:4006
     ports: ["4001:4001"]
     depends_on:
       auth: { condition: service_healthy } # auth applies migrations first
@@ -102,7 +103,24 @@ services:
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
       AI_URL: http://ai:4001
       PREDICTION_URL: http://prediction:4004
+      PAYMENTS_URL: http://payments:4006
     ports: ["4005:4005"]
+    depends_on:
+      auth: { condition: service_healthy }
+
+  payments:
+    build:
+      context: ../..
+      dockerfile: services/payments/Dockerfile
+    environment:
+      PAYMENTS_PORT: 4006
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_PLUS: ${STRIPE_PRICE_PLUS:-}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+    ports: ["4006:4006"]
     depends_on:
       auth: { condition: service_healthy }
 
@@ -116,8 +134,9 @@ services:
         NEXT_PUBLIC_TESTS_URL: http://localhost:4003
         NEXT_PUBLIC_PREDICTION_URL: http://localhost:4004
         NEXT_PUBLIC_STUDY_URL: http://localhost:4005
+        NEXT_PUBLIC_PAYMENTS_URL: http://localhost:4006
     ports: ["3000:3000"]
-    depends_on: ["ai", "auth", "tests", "prediction", "study"]
+    depends_on: ["ai", "auth", "tests", "prediction", "study", "payments"]
 
 volumes:
   pgdata:

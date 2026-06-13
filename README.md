@@ -8,7 +8,8 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Tests + Mastery** — seeded NEET bank → diagnostic → NEET scoring (+4/−1) → persisted per-concept mastery (EWMA)
 > - **Prediction** — turns mastery into a predicted NEET score (/720), rank band, confidence, and the biggest score "levers"
 > - **AI Planner** (`study`) — composes prediction → Claude → a persisted day-by-day study plan targeting the highest-leverage gaps (deterministic fallback)
-> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic test, and study-plan UI
+> - **Payments + Entitlements** — Free/Plus/Pro tiers; Stripe checkout + webhook (with a zero-key dev-activation path). Entitlements actually gate behavior: free caps study-plan horizon and is served the Sonnet (not Opus) tutor
+> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic test, study-plan, and plans/upgrade UI
 
 ## Run the slices
 
@@ -24,6 +25,7 @@ docker compose -f infra/docker/docker-compose.yml up --build
 #   tests      → http://localhost:4003/readyz  (auto-seeds the question bank)
 #   prediction → http://localhost:4004/readyz
 #   study      → http://localhost:4005/readyz  (AI Planner)
+#   payments   → http://localhost:4006/readyz  (entitlements; dev-activation if no Stripe key)
 ```
 
 **The learning loop, via API:**
@@ -37,8 +39,13 @@ curl -s localhost:4003/api/v1/mastery -H "authorization: Bearer $TOKEN"
 # predicted NEET score (/720), rank band, confidence, and improvement levers
 curl -s localhost:4004/api/v1/prediction -H "authorization: Bearer $TOKEN"
 # AI study plan: prediction levers → a day-by-day schedule (persisted)
+# (free tier caps horizon to 3 days)
 curl -s -X POST localhost:4005/api/v1/study/plan \
   -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"horizonDays":7}'
+# upgrade (dev path activates instantly without Stripe keys) → unlocks full horizon + Opus tutor
+curl -s -X POST localhost:4006/api/v1/payments/checkout \
+  -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"plan":"pro"}'
+curl -s localhost:4006/api/v1/entitlements -H "authorization: Bearer $TOKEN"
 ```
 
 Or run the AI gateway alone without Docker:

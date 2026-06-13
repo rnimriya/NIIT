@@ -57,6 +57,35 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---- Billing ----
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  stripeSubId: text("stripe_sub_id").unique(),
+  plan: text("plan").notNull().default("free"), // free | plus | pro
+  status: text("status").notNull().default("active"),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const entitlements = pgTable("entitlements", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  features: jsonb("features").notNull(), // Entitlements shape from @neet/types
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  stripeEventId: text("stripe_event_id").unique(), // idempotency key for webhooks
+  amountCents: integer("amount_cents").notNull().default(0),
+  currency: text("currency").notNull().default("inr"),
+  status: text("status").notNull().default("succeeded"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // ---- Catalog (NEET syllabus graph) ----
 export const subjects = pgTable("subjects", {
   id: uuid("id").primaryKey().defaultRandom(),
