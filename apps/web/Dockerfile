@@ -5,7 +5,9 @@ WORKDIR /repo
 
 FROM base AS build
 ARG NEXT_PUBLIC_AI_URL=http://localhost:4001
+ARG NEXT_PUBLIC_AUTH_URL=http://localhost:4002
 ENV NEXT_PUBLIC_AI_URL=$NEXT_PUBLIC_AI_URL
+ENV NEXT_PUBLIC_AUTH_URL=$NEXT_PUBLIC_AUTH_URL
 COPY pnpm-workspace.yaml package.json ./
 COPY apps/web ./apps/web
 RUN pnpm install --frozen-lockfile=false

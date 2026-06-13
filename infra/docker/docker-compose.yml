@@ -1,12 +1,15 @@
-# Local vertical slice: Postgres + Redis + AI gateway + Web.
-# Boots with zero API keys (AI tutor runs in mock mode); set ANTHROPIC_API_KEY
-# in a root .env for real Claude responses.
+# Local vertical slice: Postgres + Redis + Auth + AI gateway + Web.
+# Boots with zero AI keys (tutor runs in mock mode). Auth runs DB migrations
+# on boot; AI persists conversations to Postgres.
 #
 #   docker compose -f infra/docker/docker-compose.yml up --build
-#   → web  http://localhost:3000
-#   → ai   http://localhost:4001/readyz
+#   → web   http://localhost:3000
+#   → auth  http://localhost:4002/readyz
+#   → ai    http://localhost:4001/readyz
 
 name: neet-ai
+
+x-db-url: &db-url postgres://neet:neet@postgres:5432/neet
 
 services:
   postgres:
@@ -32,18 +35,38 @@ services:
       timeout: 3s
       retries: 10
 
+  auth:
+    build:
+      context: ../..
+      dockerfile: services/auth/Dockerfile
+    environment:
+      AUTH_PORT: 4002
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+    ports: ["4002:4002"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        ["CMD", "node", "-e",
+         "fetch('http://localhost:4002/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   ai:
     build:
       context: ../..
       dockerfile: services/ai/Dockerfile
     environment:
       AI_PORT: 4001
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports: ["4001:4001"]
     depends_on:
-      postgres: { condition: service_healthy }
-      redis: { condition: service_healthy }
+      auth: { condition: service_healthy } # auth applies migrations first
 
   web:
     build:
@@ -51,8 +74,9 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_AI_URL: http://localhost:4001
+        NEXT_PUBLIC_AUTH_URL: http://localhost:4002
     ports: ["3000:3000"]
-    depends_on: ["ai"]
+    depends_on: ["ai", "auth"]
 
 volumes:
   pgdata:

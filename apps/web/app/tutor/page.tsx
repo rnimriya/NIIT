@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const AI_URL = process.env.NEXT_PUBLIC_AI_URL ?? "http://localhost:4001";
+const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL ?? "http://localhost:4002";
 
 type Meta = {
   model: string;
@@ -21,6 +22,35 @@ export default function Tutor() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // auth (dev passwordless): register/login by email → JWT stored locally.
+  const [email, setEmail] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setToken(localStorage.getItem("neet_token"));
+    setEmail(localStorage.getItem("neet_email") ?? "");
+  }, []);
+
+  async function signIn() {
+    if (!email.trim()) return;
+    const res = await fetch(`${AUTH_URL}/api/v1/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem("neet_token", data.token);
+      localStorage.setItem("neet_email", email);
+      setToken(data.token);
+    }
+  }
+
+  function signOut() {
+    localStorage.removeItem("neet_token");
+    setToken(null);
+  }
+
   async function ask() {
     if (!question.trim() || busy) return;
     setBusy(true);
@@ -29,7 +59,10 @@ export default function Tutor() {
 
     const res = await fetch(`${AI_URL}/api/v1/ai/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ question }),
     });
 
@@ -73,6 +106,29 @@ export default function Tutor() {
       <h2 className="brand" style={{ marginTop: 8 }}>
         AI Tutor
       </h2>
+
+      <div className="meta" style={{ marginBottom: 12 }}>
+        {token ? (
+          <>
+            <span className="tag">signed in: {email}</span>{" "}
+            <a onClick={signOut} style={{ cursor: "pointer" }}>
+              sign out
+            </a>{" "}
+            — your conversations are saved to your account.
+          </>
+        ) : (
+          <span className="row" style={{ marginTop: 0 }}>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email to save your chats (dev sign-in)"
+            />
+            <button className="btn" onClick={signIn}>
+              Sign in
+            </button>
+          </span>
+        )}
+      </div>
 
       <div className="chat">
         {answer || (
