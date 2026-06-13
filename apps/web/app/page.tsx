@@ -42,6 +42,9 @@ export default function Dashboard() {
       </Link>{" "}
       <Link href="/notifications" className="btn">
         Notifications →
+      </Link>{" "}
+      <Link href="/analytics" className="btn">
+        Analytics →
       </Link>
 
       <p className="meta" style={{ marginTop: 28 }}>

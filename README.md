@@ -13,7 +13,8 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Payments + Entitlements** — Free/Plus/Pro tiers; Stripe checkout + webhook (with a zero-key dev-activation path). Entitlements actually gate behavior: free caps study-plan horizon and is served the Sonnet (not Opus) tutor
 > - **Notifications** — in-app + email (Resend optional) with dedupe; emitted on test-scored / plan-ready / subscription-active
 > - **Event bus (Kafka)** — optional, gated by `KAFKA_BROKERS`. When on, `tests` writes `TestScored` to a **transactional outbox** (atomic with the DB write) and a relay publishes it; `prediction` + `notifications` consume it (event-driven recompute + notify). When off, services fall back to direct HTTP. compose runs Redpanda
-> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, and notifications UI
+> - **Analytics (ClickHouse)** — consumes the Kafka event stream into ClickHouse + a `track` API; exposes overview + acquisition→activation funnel
+> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, notifications, and analytics-funnel UI
 
 ## Run the slices
 
@@ -31,6 +32,7 @@ docker compose -f infra/docker/docker-compose.yml up --build
 #   study      → http://localhost:4005/readyz  (AI Planner)
 #   payments   → http://localhost:4006/readyz  (entitlements; dev-activation if no Stripe key)
 #   notifications → http://localhost:4007/readyz
+#   analytics  → http://localhost:4008/readyz  (ClickHouse funnel)
 ```
 
 **The learning loop, via API:**
