@@ -88,7 +88,8 @@ scripts/   seed · migrate · codegen · load-test
 
 ## Documentation
 
-The complete system design — domain model, topology, database schema, AI platform, security, observability, DevOps, cost model, and 90-day plan — lives in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — full system design (domain model, topology, DB schema, AI platform, security, observability, DevOps, cost model, 90-day plan).
+- **[docs/DEPLOY.md](docs/DEPLOY.md)** — deploy runbook: Terraform → EKS/RDS/Redis/MSK, GHCR images, Helm rollout, verification, rollback.
 
 ## Targets
 

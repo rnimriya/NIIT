@@ -7,6 +7,10 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+# For private GHCR packages: kubectl create secret docker-registry ghcr-pull ...
+imagePullSecrets: []
+# - name: ghcr-pull
+
 port: 8080
 
 # Non-secret config injected as env vars (e.g. in-cluster service URLs).
