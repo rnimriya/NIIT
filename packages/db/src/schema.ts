@@ -6,6 +6,8 @@ import {
   real,
   jsonb,
   timestamp,
+  boolean,
+  index,
   primaryKey,
 } from "drizzle-orm/pg-core";
 
@@ -85,6 +87,24 @@ export const payments = pgTable("payments", {
   status: text("status").notNull().default("succeeded"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ---- Transactional Outbox ----
+// Events are written here in the SAME transaction as the business write, then a
+// relay publishes them to Kafka and marks them published (at-least-once, atomic).
+export const outbox = pgTable(
+  "outbox",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    topic: text("topic").notNull(),
+    key: text("key").notNull(),
+    type: text("type").notNull(),
+    payload: jsonb("payload").notNull(), // the full DomainEvent envelope
+    published: boolean("published").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+  },
+  (t) => ({ unpub: index("outbox_unpublished_idx").on(t.published, t.createdAt) }),
+);
 
 // ---- Engagement / Notifications ----
 export const notifications = pgTable("notifications", {

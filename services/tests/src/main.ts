@@ -2,9 +2,11 @@ import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "@nestjs/common";
 import { runMigrations, createDb } from "@neet/db";
+import { EventBus, kafkaBrokers } from "@neet/events";
 import { AppModule } from "./app.module";
 import { config } from "./config";
 import { seedIfEmpty } from "./seed";
+import { OutboxRelay } from "./outbox-relay";
 
 async function bootstrap() {
   const log = new Logger("Bootstrap");
@@ -22,6 +24,19 @@ async function bootstrap() {
   app.enableShutdownHooks();
   await app.listen(config.TESTS_PORT, "0.0.0.0");
   log.log(`Tests service listening on :${config.TESTS_PORT}`);
+
+  // Outbox relay: publish committed events to Kafka (when enabled).
+  const brokers = kafkaBrokers();
+  if (brokers) {
+    const bus = new EventBus(brokers, "tests-relay");
+    try {
+      await bus.waitReady();
+      await bus.ensureTopics(["assessment.events"]);
+      await new OutboxRelay(createDb(config.DATABASE_URL), bus).start();
+    } catch (e) {
+      log.error(`outbox relay failed to start: ${(e as Error).message}`);
+    }
+  }
 }
 
 bootstrap();

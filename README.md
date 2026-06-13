@@ -12,7 +12,7 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **AI Planner** (`study`) — composes prediction → Claude → a persisted day-by-day study plan targeting the highest-leverage gaps (deterministic fallback)
 > - **Payments + Entitlements** — Free/Plus/Pro tiers; Stripe checkout + webhook (with a zero-key dev-activation path). Entitlements actually gate behavior: free caps study-plan horizon and is served the Sonnet (not Opus) tutor
 > - **Notifications** — in-app + email (Resend optional) with dedupe; emitted on test-scored / plan-ready / subscription-active
-> - **Event bus (Kafka)** — optional, gated by `KAFKA_BROKERS`. When on, `tests` publishes `TestScored` and `prediction` + `notifications` consume it (event-driven recompute + notify); when off, services fall back to direct HTTP. compose runs Redpanda
+> - **Event bus (Kafka)** — optional, gated by `KAFKA_BROKERS`. When on, `tests` writes `TestScored` to a **transactional outbox** (atomic with the DB write) and a relay publishes it; `prediction` + `notifications` consume it (event-driven recompute + notify). When off, services fall back to direct HTTP. compose runs Redpanda
 > - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, and notifications UI
 
 ## Run the slices

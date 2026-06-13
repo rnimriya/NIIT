@@ -10,7 +10,9 @@ import {
   type Database,
 } from "@neet/db";
 import { emitNotification } from "@neet/shared";
-import { EventBus, kafkaBrokers, ASSESSMENT_TOPIC } from "@neet/events";
+import { kafkaBrokers, ASSESSMENT_TOPIC, type DomainEvent } from "@neet/events";
+import { outbox } from "@neet/db";
+import { randomUUID } from "node:crypto";
 import { DB } from "./db.module";
 import { config } from "./config";
 
@@ -43,11 +45,10 @@ export interface ScoreResult {
 
 @Injectable()
 export class TestsService {
-  // When Kafka is enabled, scoring publishes a TestScored event that prediction
-  // and notifications consume. Otherwise we fall back to a direct HTTP notify.
-  private readonly bus = kafkaBrokers()
-    ? new EventBus(kafkaBrokers() as string[], "tests")
-    : null;
+  // When Kafka is enabled, scoring writes a TestScored event to the outbox in
+  // the same transaction (a relay publishes it; prediction + notifications
+  // consume). Otherwise we fall back to a direct HTTP notify.
+  private readonly kafkaEnabled = !!kafkaBrokers();
 
   constructor(@Inject(DB) private readonly db: Database) {}
 
@@ -160,21 +161,29 @@ export class TestsService {
           })),
         );
         await this.recomputeMastery(tx, userId, perConcept);
+
+        if (this.kafkaEnabled) {
+          // Transactional outbox: the event commits atomically with the
+          // attempt + mastery. The relay publishes it; consumers react.
+          const event: DomainEvent = {
+            eventId: randomUUID(),
+            type: "TestScored",
+            version: 1,
+            occurredAt: new Date().toISOString(),
+            actor: userId,
+            payload: { testId, score, maxScore, correct, wrong },
+          };
+          await tx.insert(outbox).values({
+            topic: ASSESSMENT_TOPIC,
+            key: userId,
+            type: "TestScored",
+            payload: event,
+          });
+        }
       });
       persisted = true;
 
-      if (this.bus) {
-        // Event-driven: prediction recomputes + notifications notify on consume.
-        void this.bus.publish(
-          ASSESSMENT_TOPIC,
-          userId,
-          this.bus.makeEvent(
-            "TestScored",
-            { testId, score, maxScore, correct, wrong },
-            userId,
-          ),
-        );
-      } else {
+      if (!this.kafkaEnabled) {
         // HTTP fallback (no event bus): notify directly.
         void emitNotification(config.NOTIFICATIONS_URL, {
           userId,

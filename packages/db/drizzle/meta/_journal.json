@@ -43,6 +43,13 @@
       "when": 1781341791032,
       "tag": "0005_needy_colossus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781344309805,
+      "tag": "0006_awesome_junta",
+      "breakpoints": true
     }
   ]
 }
