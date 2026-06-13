@@ -2,18 +2,34 @@
 
 Production-grade, AI-native NEET preparation platform. Autonomous learning OS that plans, tutors, tests, revises, and predicts — built on Claude.
 
-> **Status:** Foundation + first runnable slice. This repo contains the full **architecture blueprint** ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), the monorepo **scaffold**, and a working **vertical slice**: the AI tutor gateway (Claude streaming + fallback + prompt caching) and a Next.js dashboard/chat, bootable via docker-compose.
+> **Status:** Foundation + working slices. This repo contains the full **architecture blueprint** ([docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)), the monorepo **scaffold**, and runnable, DB-backed slices:
+> - **AI tutor gateway** — Claude streaming + fallback chain + prompt caching, persists conversations
+> - **Auth** — register/login/JWT (Clerk-ready), runs DB migrations
+> - **Tests + Mastery** — seeded NEET bank → diagnostic → NEET scoring (+4/−1) → persisted per-concept mastery (EWMA)
+> - **Web** — Next.js dashboard, tutor chat, and diagnostic test UI
 
-## Run the vertical slice
+## Run the slices
 
-Boots with **zero API keys** (the tutor runs in deterministic mock mode). Set `ANTHROPIC_API_KEY` for real Claude responses.
+Boots with **zero AI keys** (the tutor runs in deterministic mock mode). Set `ANTHROPIC_API_KEY` for real Claude responses. Auth + Tests persist to Postgres.
 
 ```bash
 cp .env.example .env            # optional: add ANTHROPIC_API_KEY
 pnpm install
 docker compose -f infra/docker/docker-compose.yml up --build
-#   web → http://localhost:3000        (dashboard + AI tutor chat)
-#   ai  → http://localhost:4001/readyz (gateway health)
+#   web   → http://localhost:3000        (dashboard · tutor · diagnostic)
+#   ai    → http://localhost:4001/readyz
+#   auth  → http://localhost:4002/readyz
+#   tests → http://localhost:4003/readyz  (auto-seeds the question bank)
+```
+
+**The learning loop, via API:**
+
+```bash
+TOKEN=$(curl -s -X POST localhost:4002/api/v1/auth/register \
+  -H 'content-type: application/json' -d '{"email":"me@neet.ai"}' | jq -r .token)
+# take a diagnostic → score it → mastery is saved and weak concepts surfaced
+curl -s -X POST localhost:4003/api/v1/test/diagnostic -H "authorization: Bearer $TOKEN"
+curl -s localhost:4003/api/v1/mastery -H "authorization: Bearer $TOKEN"
 ```
 
 Or run the AI gateway alone without Docker:

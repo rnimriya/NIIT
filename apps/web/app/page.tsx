@@ -33,6 +33,9 @@ export default function Dashboard() {
 
       <Link href="/tutor" className="btn">
         Ask the AI Tutor →
+      </Link>{" "}
+      <Link href="/test" className="btn">
+        Take a Diagnostic →
       </Link>
 
       <p className="meta" style={{ marginTop: 28 }}>

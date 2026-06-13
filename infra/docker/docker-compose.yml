@@ -68,6 +68,18 @@ services:
     depends_on:
       auth: { condition: service_healthy } # auth applies migrations first
 
+  tests:
+    build:
+      context: ../..
+      dockerfile: services/tests/Dockerfile
+    environment:
+      TESTS_PORT: 4003
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+    ports: ["4003:4003"]
+    depends_on:
+      auth: { condition: service_healthy } # migrations applied; then seeds bank
+
   web:
     build:
       context: ../..
@@ -75,8 +87,9 @@ services:
       args:
         NEXT_PUBLIC_AI_URL: http://localhost:4001
         NEXT_PUBLIC_AUTH_URL: http://localhost:4002
+        NEXT_PUBLIC_TESTS_URL: http://localhost:4003
     ports: ["3000:3000"]
-    depends_on: ["ai", "auth"]
+    depends_on: ["ai", "auth", "tests"]
 
 volumes:
   pgdata:
