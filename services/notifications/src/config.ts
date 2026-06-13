@@ -2,10 +2,13 @@ import { z } from "zod";
 
 const Schema = z.object({
   NODE_ENV: z.string().default("development"),
-  TESTS_PORT: z.coerce.number().default(4003),
+  NOTIFICATIONS_PORT: z.coerce.number().default(4007),
   DATABASE_URL: z.string().default("postgres://neet:neet@localhost:5432/neet"),
   JWT_DEV_SECRET: z.string().default("dev-only-change-me"),
-  NOTIFICATIONS_URL: z.string().default("http://localhost:4007"),
+  // Optional email provider — without it, email channel just logs.
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default("NEET AI <noreply@neet.ai>"),
 });
 
 export const config = Schema.parse(process.env);
+export const emailEnabled = !!config.RESEND_API_KEY;

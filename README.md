@@ -9,7 +9,8 @@ Production-grade, AI-native NEET preparation platform. Autonomous learning OS th
 > - **Prediction** — turns mastery into a predicted NEET score (/720), rank band, confidence, and the biggest score "levers"
 > - **AI Planner** (`study`) — composes prediction → Claude → a persisted day-by-day study plan targeting the highest-leverage gaps (deterministic fallback)
 > - **Payments + Entitlements** — Free/Plus/Pro tiers; Stripe checkout + webhook (with a zero-key dev-activation path). Entitlements actually gate behavior: free caps study-plan horizon and is served the Sonnet (not Opus) tutor
-> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic test, study-plan, and plans/upgrade UI
+> - **Notifications** — in-app + email (Resend optional) with dedupe; other services emit on test-scored / plan-ready / subscription-active (HTTP emit today, Kafka-ready)
+> - **Web** — Next.js dashboard (live prediction), tutor chat, diagnostic, study-plan, plans/upgrade, and notifications UI
 
 ## Run the slices
 
@@ -26,6 +27,7 @@ docker compose -f infra/docker/docker-compose.yml up --build
 #   prediction → http://localhost:4004/readyz
 #   study      → http://localhost:4005/readyz  (AI Planner)
 #   payments   → http://localhost:4006/readyz  (entitlements; dev-activation if no Stripe key)
+#   notifications → http://localhost:4007/readyz
 ```
 
 **The learning loop, via API:**
@@ -46,6 +48,8 @@ curl -s -X POST localhost:4005/api/v1/study/plan \
 curl -s -X POST localhost:4006/api/v1/payments/checkout \
   -H "authorization: Bearer $TOKEN" -H 'content-type: application/json' -d '{"plan":"pro"}'
 curl -s localhost:4006/api/v1/entitlements -H "authorization: Bearer $TOKEN"
+# the actions above emit notifications (test-scored, plan-ready, subscription-active)
+curl -s localhost:4007/api/v1/notifications -H "authorization: Bearer $TOKEN"
 ```
 
 Or run the AI gateway alone without Docker:

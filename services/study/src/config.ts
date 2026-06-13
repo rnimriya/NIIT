@@ -8,6 +8,7 @@ const Schema = z.object({
   AI_URL: z.string().default("http://localhost:4001"),
   PREDICTION_URL: z.string().default("http://localhost:4004"),
   PAYMENTS_URL: z.string().default("http://localhost:4006"),
+  NOTIFICATIONS_URL: z.string().default("http://localhost:4007"),
 });
 
 export const config = Schema.parse(process.env);

@@ -86,6 +86,20 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ---- Engagement / Notifications ----
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // plan_ready | test_scored | subscription_active | ...
+  channel: text("channel").notNull().default("in_app"), // in_app | email | push
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("sent"), // queued | sent | read
+  dedupeKey: text("dedupe_key"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+});
+
 // ---- Catalog (NEET syllabus graph) ----
 export const subjects = pgTable("subjects", {
   id: uuid("id").primaryKey().defaultRandom(),

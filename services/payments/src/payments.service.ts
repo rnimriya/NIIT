@@ -8,6 +8,7 @@ import {
   type Database,
 } from "@neet/db";
 import type { Entitlements, PlanTier } from "@neet/types";
+import { emitNotification } from "@neet/shared";
 import { DB } from "./db.module";
 import { config, stripeEnabled } from "./config";
 import { PLAN_FEATURES } from "./plans";
@@ -93,6 +94,15 @@ export class PaymentsService {
           .onConflictDoNothing(); // dedupe replays
       }
     });
+
+    if (plan !== "free") {
+      void emitNotification(config.NOTIFICATIONS_URL, {
+        userId,
+        type: "subscription_active",
+        title: `Welcome to ${plan.toUpperCase()}`,
+        body: `Your ${plan} plan is active — Opus tutor and longer study plans are unlocked.`,
+      });
+    }
     return features;
   }
 

@@ -12,6 +12,7 @@ const Schema = z.object({
   STRIPE_PRICE_PRO: z.string().optional(),
   CHECKOUT_SUCCESS_URL: z.string().default("http://localhost:3000/upgrade?status=success"),
   CHECKOUT_CANCEL_URL: z.string().default("http://localhost:3000/upgrade?status=cancel"),
+  NOTIFICATIONS_URL: z.string().default("http://localhost:4007"),
 });
 
 export const config = Schema.parse(process.env);

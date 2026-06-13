@@ -9,7 +9,9 @@ import {
   mastery,
   type Database,
 } from "@neet/db";
+import { emitNotification } from "@neet/shared";
 import { DB } from "./db.module";
+import { config } from "./config";
 
 const SUBJECTS = ["physics", "chemistry", "biology"] as const;
 const PER_SUBJECT = 2;
@@ -153,6 +155,14 @@ export class TestsService {
         await this.recomputeMastery(tx, userId, perConcept);
       });
       persisted = true;
+
+      void emitNotification(config.NOTIFICATIONS_URL, {
+        userId,
+        type: "test_scored",
+        title: `Diagnostic scored: ${score}/${maxScore}`,
+        body: `You got ${correct} right, ${wrong} wrong. Generate a study plan to target your weak areas.`,
+        dedupeWindowSec: 5, // allow per-attempt notifications
+      });
     }
 
     const weakConcepts = await this.weakFrom(perConcept);

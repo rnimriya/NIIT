@@ -77,6 +77,7 @@ services:
       TESTS_PORT: 4003
       DATABASE_URL: *db-url
       JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+      NOTIFICATIONS_URL: http://notifications:4007
     ports: ["4003:4003"]
     depends_on:
       auth: { condition: service_healthy } # migrations applied; then seeds bank
@@ -104,6 +105,7 @@ services:
       AI_URL: http://ai:4001
       PREDICTION_URL: http://prediction:4004
       PAYMENTS_URL: http://payments:4006
+      NOTIFICATIONS_URL: http://notifications:4007
     ports: ["4005:4005"]
     depends_on:
       auth: { condition: service_healthy }
@@ -120,7 +122,21 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       STRIPE_PRICE_PLUS: ${STRIPE_PRICE_PLUS:-}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      NOTIFICATIONS_URL: http://notifications:4007
     ports: ["4006:4006"]
+    depends_on:
+      auth: { condition: service_healthy }
+
+  notifications:
+    build:
+      context: ../..
+      dockerfile: services/notifications/Dockerfile
+    environment:
+      NOTIFICATIONS_PORT: 4007
+      DATABASE_URL: *db-url
+      JWT_DEV_SECRET: ${JWT_DEV_SECRET:-dev-only-change-me}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    ports: ["4007:4007"]
     depends_on:
       auth: { condition: service_healthy }
 
@@ -135,8 +151,9 @@ services:
         NEXT_PUBLIC_PREDICTION_URL: http://localhost:4004
         NEXT_PUBLIC_STUDY_URL: http://localhost:4005
         NEXT_PUBLIC_PAYMENTS_URL: http://localhost:4006
+        NEXT_PUBLIC_NOTIFICATIONS_URL: http://localhost:4007
     ports: ["3000:3000"]
-    depends_on: ["ai", "auth", "tests", "prediction", "study", "payments"]
+    depends_on: ["ai", "auth", "tests", "prediction", "study", "payments", "notifications"]
 
 volumes:
   pgdata:

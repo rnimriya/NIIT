@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import { desc, eq } from "drizzle-orm";
 import { studyPlans, type Database } from "@neet/db";
+import { emitNotification } from "@neet/shared";
 import type { Entitlements, PlanInput, PlanResult, StudyPlan } from "@neet/types";
 import { DB } from "./db.module";
 import { config } from "./config";
@@ -46,6 +47,13 @@ export class StudyService {
       horizonDays: effectiveHorizon,
       plan: result.plan,
       source: result.provider,
+    });
+
+    void emitNotification(config.NOTIFICATIONS_URL, {
+      userId,
+      type: "plan_ready",
+      title: "Your study plan is ready",
+      body: `A ${effectiveHorizon}-day plan targeting your weakest concepts is waiting on your dashboard.`,
     });
 
     return {
